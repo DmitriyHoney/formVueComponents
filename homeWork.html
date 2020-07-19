@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css//bootstrap.min.css">
+    <link rel="stylesheet" href="css/font-awesome.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <title>Homework</title>
+</head>
+
+
+
+<body>
+    <div id="app"> 
+        <div class="sample">
+            <form v-if="!isFormSend" @submit.prevent="handleSubmit">
+                <div class="progress">
+					<div class="progress-bar" :style="{width: progressBarWidth + '%'}"></div>
+                </div>
+				<div>
+                    <custom-input 
+                        v-for="input of inputs" 
+                        :input="input"
+                        @sucess-validate="incSuccessValidate"
+                        @prev-validate="decSuccessValidate"
+                    />
+				</div>
+				<button class="btn btn-primary" :disabled="!isReadyForm">
+					Send Data
+                </button>
+            </form>
+            <custom-table v-else :inputs="inputs"/>
+        </div>
+    </div>
+    
+
+        
+        
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script>
+    <script>
+
+        Vue.component('custom-table', {
+            props: ['inputs'],
+            template: `
+                <table class="table table-bordered">
+                    <tr v-for="input of inputs">
+                        <td>{{input.title}}</td>
+                        <td>{{input.value}}</td>
+                    </tr>
+                </table>
+            `,
+            
+        });
+
+        Vue.component('custom-input', {
+            props: ['input'],
+            template: `
+                <div class="form-group">
+                    <label>{{input.title}}</label>
+                    <span :class="classObject"></span>
+                    <input type="text" 
+                        class="form-control"
+                        v-model="input.value"
+                        @input="handleInput"
+                    >
+                </div>
+            `,
+            data() {
+                return {
+                   pattern: this.input.pattern,
+                   validate: null
+                }
+            },
+            computed: {
+                val() {
+                    return this.input.value
+                },
+                classObject() {
+                    return {
+                        'success': this.validate,
+                        'warn': this.validate === false
+                    }
+                }
+            },
+            methods: {
+                handleInput() {
+                    let value   = this.val,
+                        pattern = this.pattern;
+                        
+                    if(this.validate) { //Если прошлая валидация успешна
+                        if (pattern.test(value)) this.validate = true;
+                        else { //и стала не успешной тогда уменьшаем счётчик
+                            this.$emit('prev-validate');
+                            this.validate = false;
+                        }
+                    } else { //Если прошлая валидация не успешна
+                        if (pattern.test(value)) { //и стала успешной тогда увеличиваем счётчик
+                            this.validate = true;
+                            this.$emit('sucess-validate');
+                        } 
+                        else this.validate = false;
+                    } 
+                }
+            }
+        });
+
+        new Vue({
+            el: '#app',
+            data: {
+                inputs: [
+                    {title: 'Name', pattern: /^[a-zA-Z ]{2,30}$/, value: ''},
+                    {title: 'Phone', pattern: /^[0-9]{7,14}$/, value: ''},   
+                    {title: 'Email', pattern: /.+/, value: ''},   
+                    {title: 'Some Field 1', pattern: /.+/, value: ''},   
+                    {title: 'Some Field 2', pattern: /.+/, value: ''}, 
+                ],
+                successLengthValidate: 0,
+                progressBarWidth: 0,
+                isFormSend: false
+            },
+            methods: {
+                incSuccessValidate() {
+                    this.successLengthValidate++;
+                    this.progressBarWidth += this.onePieceProgressBar;
+                },
+                decSuccessValidate() {
+                    this.successLengthValidate--;
+                    this.progressBarWidth -= this.onePieceProgressBar;
+                },
+                handleSubmit() {
+                    this.isFormSend = true;
+                }
+            },
+            computed: {
+                onePieceProgressBar() {
+                    return 100 / this.inputs.length;
+                },
+                isReadyForm() {
+                    return this.successLengthValidate === this.inputs.length
+                }
+            },
+
+            updated() {
+                console.log('updated');
+            }
+        });
+
+    </script>
+
+    
+    <script src="script.js"></script>
+</body>
+</html>
